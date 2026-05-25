@@ -1,0 +1,7 @@
+Trip Type,Origin,Destination,Distance,Unit,Travel Class,Hotel Nights
+Flight,BOM,LHR,7190,km,Business,0
+Flight,JFK,SFO,2586,mi,Economy,0
+Hotel,London,London,0,km,Standard,4
+Ground Transport,SFO,SJC,77,km,Standard,0
+Flight,,SIN,3900,km,Economy,0
+Ground Transport,Berlin,Hamburg,0,km,Standard,0

@@ -1,0 +1,6 @@
+Plant Code,Material Description,Fuel Type,Quantity,Unit,Posting Date
+IN-MUM-01,Backup generator diesel,Diesel,1250,L,2026-01-31
+US-TX-02,Boiler natural gas,Natural Gas,18.5,m3,2026-02-04
+,Fleet vehicle petrol,Petrol,420,L,2026-02-07
+DE-BER-03,Office supplies procurement,Procurement,950,USD,2026-02-11
+IN-PUN-04,Diesel reversal,Diesel,-50,L,2026-02-14
