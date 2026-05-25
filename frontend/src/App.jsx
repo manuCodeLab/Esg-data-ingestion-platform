@@ -37,7 +37,7 @@ import Refresh from '@mui/icons-material/Refresh';
 import ReportProblem from '@mui/icons-material/ReportProblem';
 import ThumbDown from '@mui/icons-material/ThumbDown';
 import ThumbUp from '@mui/icons-material/ThumbUp';
-import { fetchDashboard, fetchRecord, fetchRecords, reviewRecord, uploadCsv } from './api.js';
+import { fetchDashboard, fetchRecord, fetchRecords, reviewRecord, uploadFile } from './api.js';
 
 const sourceLabels = {
   sap: 'SAP Fuel & Procurement',
@@ -72,7 +72,7 @@ function Metric({ label, value, icon }) {
   );
 }
 
-function UploadButton({ source, onUploaded }) {
+function UploadButton({ source, onUploaded, onError, onSuccess }) {
   const [busy, setBusy] = useState(false);
 
   async function handleFile(event) {
@@ -80,8 +80,11 @@ function UploadButton({ source, onUploaded }) {
     if (!file) return;
     setBusy(true);
     try {
-      await uploadCsv(source, file);
-      onUploaded();
+      const result = await uploadFile(source, file);
+      await onUploaded();
+      onSuccess(`${file.name} uploaded: ${result.created_count} record(s) added.`);
+    } catch (err) {
+      onError(err.message);
     } finally {
       setBusy(false);
       event.target.value = '';
@@ -91,7 +94,7 @@ function UploadButton({ source, onUploaded }) {
   return (
     <Button component="label" variant="outlined" startIcon={<CloudUpload />} disabled={busy}>
       {sourceLabels[source]}
-      <input hidden type="file" accept=".csv,text/csv" onChange={handleFile} />
+      <input hidden type="file" accept=".csv,text/csv,.pdf,application/pdf" onChange={handleFile} />
     </Button>
   );
 }
@@ -182,6 +185,7 @@ export default function App() {
   const [filters, setFilters] = useState({ source: '', scope: '', status: '' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   const suspiciousIds = useMemo(() => new Set(records.filter((record) => record.issue_count > 0).map((record) => record.id)), [records]);
 
@@ -226,6 +230,7 @@ export default function App() {
       {loading && <LinearProgress />}
       <Container maxWidth="xl" sx={{ py: 3 }}>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {notice && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setNotice('')}>{notice}</Alert>}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={2.4}><Metric label="Total Records" value={dashboard?.total_records} icon={<FactCheck color="primary" />} /></Grid>
           <Grid item xs={12} sm={6} md={2.4}><Metric label="Pending Review" value={dashboard?.pending_review} icon={<ReportProblem color="warning" />} /></Grid>
@@ -235,9 +240,42 @@ export default function App() {
         </Grid>
         <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
-            <UploadButton source="sap" onUploaded={load} />
-            <UploadButton source="utility" onUploaded={load} />
-            <UploadButton source="travel" onUploaded={load} />
+            <UploadButton
+              source="sap"
+              onUploaded={load}
+              onError={(message) => {
+                setNotice('');
+                setError(message);
+              }}
+              onSuccess={(message) => {
+                setError('');
+                setNotice(message);
+              }}
+            />
+            <UploadButton
+              source="utility"
+              onUploaded={load}
+              onError={(message) => {
+                setNotice('');
+                setError(message);
+              }}
+              onSuccess={(message) => {
+                setError('');
+                setNotice(message);
+              }}
+            />
+            <UploadButton
+              source="travel"
+              onUploaded={load}
+              onError={(message) => {
+                setNotice('');
+                setError(message);
+              }}
+              onSuccess={(message) => {
+                setError('');
+                setNotice(message);
+              }}
+            />
           </Stack>
         </Paper>
         <Paper variant="outlined">

@@ -12,7 +12,7 @@ Backend: `http://localhost:8000/api`
 
 Frontend: `http://localhost:5173`
 
-Upload the CSVs in `sample_data/` from the frontend upload controls.
+Upload CSVs from `sample_data/`, or PDFs that contain selectable table text with the same headers, from the frontend upload controls.
 
 ## Backend Without Docker
 
@@ -39,9 +39,9 @@ All endpoints accept `X-Tenant: demo`; if omitted, the backend uses `demo`.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| POST | `/api/upload/sap` | Upload SAP fuel/procurement CSV as multipart `file` |
-| POST | `/api/upload/utility` | Upload utility electricity CSV as multipart `file` |
-| POST | `/api/upload/travel` | Upload corporate travel CSV as multipart `file` |
+| POST | `/api/upload/sap` | Upload SAP fuel/procurement CSV/PDF as multipart `file` |
+| POST | `/api/upload/utility` | Upload utility electricity CSV/PDF as multipart `file` |
+| POST | `/api/upload/travel` | Upload corporate travel CSV/PDF as multipart `file` |
 | GET | `/api/records` | List emission records; filters: `source`, `scope`, `status` |
 | GET | `/api/records/:id` | Retrieve raw data, normalized data, validation issues, audit trail |
 | POST | `/api/records/:id/approve` | Approve with optional JSON `{ "comment": "..." }` |

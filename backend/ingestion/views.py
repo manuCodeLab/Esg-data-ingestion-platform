@@ -6,7 +6,7 @@ from rest_framework.response import Response
 
 from .models import DataSource, EmissionRecord
 from .serializers import EmissionRecordDetailSerializer, EmissionRecordListSerializer, ReviewActionSerializer
-from .services import ingest_csv, transition_record, update_comment
+from .services import ingest_upload, transition_record, update_comment
 
 
 def tenant_slug_from_request(request):
@@ -16,8 +16,11 @@ def tenant_slug_from_request(request):
 def upload_for_source(request, source_type):
     uploaded = request.FILES.get("file")
     if not uploaded:
-        return Response({"detail": "CSV file is required as multipart field 'file'."}, status=status.HTTP_400_BAD_REQUEST)
-    result = ingest_csv(uploaded, source_type=source_type, tenant_slug=tenant_slug_from_request(request))
+        return Response({"detail": "CSV or PDF file is required as multipart field 'file'."}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        result = ingest_upload(uploaded, source_type=source_type, tenant_slug=tenant_slug_from_request(request))
+    except ValueError as exc:
+        return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
     return Response(
         {
             "batch_id": str(result["batch_id"]),

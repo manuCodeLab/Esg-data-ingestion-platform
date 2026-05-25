@@ -43,8 +43,10 @@ export function reviewRecord(id, action, comment) {
   });
 }
 
-export function uploadCsv(source, file) {
+export function uploadFile(source, file) {
   const body = new FormData();
   body.append('file', file);
   return request(`/upload/${source}`, { method: 'POST', body });
 }
+
+export const uploadCsv = uploadFile;
