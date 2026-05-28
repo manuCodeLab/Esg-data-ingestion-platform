@@ -93,7 +93,24 @@ function splitRoute(value) {
 }
 
 function rowsFromReportLines(source, lines) {
+  const text = lines.join('\n');
   if (source === 'sap') {
+    const inlineRows = [];
+    const pattern = /(SAP-(?:FUEL|PROC)-\d+)\s+(\d{4}-\d{2}-\d{2})\s+(\d{4}-\d{2}-\d{2})\s+(SAP Fuel|SAP Procurement)\s+(.+?)\s+(-?[\d,.]+)\s+([A-Za-z0-9/]+)\s+[\d.]+\s+kgCO2e\/[A-Za-z0-9/]+/g;
+    for (const match of text.matchAll(pattern)) {
+      inlineRows.push({
+        'Plant Code': match[1],
+        'Material Description': `${match[4]} ${match[5]}`.trim(),
+        'Fuel Type': match[5],
+        Quantity: match[6],
+        Unit: match[7],
+        'Posting Date': match[3] || match[2],
+      });
+    }
+    if (inlineRows.length > 0) {
+      return inlineRows;
+    }
+
     const rows = rowsFromStackedLines(lines, ['Record ID', 'Start Date', 'End Date', 'Source', 'Category', 'Quantity', 'Unit', 'Rate']);
     return rows.map((row) => ({
       'Plant Code': row['Record ID'],
@@ -281,7 +298,7 @@ function normalizeLocalRow(source, row, file, index) {
 }
 
 async function createLocalRecords(source, file) {
-  const records = readLocalRecords();
+  const records = readLocalRecords().filter((record) => record.normalized_data?.file_name !== file.name);
   const nextId = Math.max(0, ...records.map((record) => record.id || 0)) + 1;
   let rows = [];
   let extractedText = '';
