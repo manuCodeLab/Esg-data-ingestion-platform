@@ -10,9 +10,9 @@
     "@mui/icons-material": "^5.15.18",
     "@mui/material": "^5.15.18",
     "@vitejs/plugin-react": "^4.2.1",
-    "vite": "^5.2.11",
+    "pdfjs-dist": "^5.7.284",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
-  },
-  "devDependencies": {}
+    "react-dom": "^18.2.0",
+    "vite": "^5.2.11"
+  }
 }
