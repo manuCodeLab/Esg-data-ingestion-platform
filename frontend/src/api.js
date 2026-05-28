@@ -180,7 +180,12 @@ function dashboardFrom(records) {
 
 function readLocalRecords() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const migrated = migratePlaceholderRecords(records);
+    if (migrated.changed) {
+      writeLocalRecords(migrated.records);
+    }
+    return migrated.records;
   } catch {
     return [];
   }
@@ -188,6 +193,49 @@ function readLocalRecords() {
 
 function writeLocalRecords(records) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+}
+
+function migratePlaceholderRecords(records) {
+  let changed = false;
+  const migrated = [];
+
+  for (const record of records) {
+    const extractedText = record.normalized_data?.extracted_text || '';
+    const isOldPlaceholder = record.normalized_data?.note === 'PDF text was read, but no supported rows were detected.'
+      || record.activity_type?.startsWith('PDF row');
+
+    if (!isOldPlaceholder || !extractedText) {
+      migrated.push(record);
+      continue;
+    }
+
+    const source = record.data_source?.source_type || 'sap';
+    const rows = rowsFromTextLines(source, extractedText.split('\n').map((line) => line.trim()).filter(Boolean));
+    if (rows.length === 0) {
+      changed = true;
+      continue;
+    }
+
+    changed = true;
+    rows.forEach((row, index) => {
+      const parsed = normalizeLocalRow(source, row, { name: record.normalized_data.file_name || 'Uploaded PDF', type: 'application/pdf', size: record.normalized_data.file_size_bytes || 0 }, index + 1);
+      migrated.push({
+        ...parsed,
+        id: record.id + index,
+        issue_count: 0,
+        normalized_data: {
+          ...parsed.normalized_data,
+          file_name: record.normalized_data.file_name,
+          file_type: record.normalized_data.file_type || 'application/pdf',
+          file_size_bytes: record.normalized_data.file_size_bytes,
+          extracted_text: extractedText,
+          note: 'Parsed locally from uploaded PDF.',
+        },
+      });
+    });
+  }
+
+  return { changed, records: migrated };
 }
 
 function localDashboard() {
