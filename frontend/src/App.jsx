@@ -211,6 +211,11 @@ export default function App() {
     }
   }
 
+  async function handleUploaded() {
+    await load();
+    setFilters({ source: '', scope: '', status: '' });
+  }
+
   async function openRecord(id) {
     setSelected(await fetchRecord(id));
   }
@@ -250,7 +255,7 @@ export default function App() {
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
             <UploadButton
               source="sap"
-              onUploaded={load}
+              onUploaded={handleUploaded}
               onError={(message) => {
                 setNotice('');
                 setError(message);
@@ -262,7 +267,7 @@ export default function App() {
             />
             <UploadButton
               source="utility"
-              onUploaded={load}
+              onUploaded={handleUploaded}
               onError={(message) => {
                 setNotice('');
                 setError(message);
@@ -274,7 +279,7 @@ export default function App() {
             />
             <UploadButton
               source="travel"
-              onUploaded={load}
+              onUploaded={handleUploaded}
               onError={(message) => {
                 setNotice('');
                 setError(message);

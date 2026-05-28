@@ -49,9 +49,19 @@ function sourceScope(source) {
   }[source] || 'scope_3';
 }
 
-function createLocalRecord(source, file) {
+function extractPdfText(rawText) {
+  const matches = [...rawText.matchAll(/\(([^()]{3,})\)\s*Tj/g)]
+    .map((match) => match[1])
+    .join(' ');
+  const readable = matches || rawText.replace(/[^\x20-\x7E]+/g, ' ');
+  return readable.replace(/\s+/g, ' ').trim().slice(0, 4000);
+}
+
+async function createLocalRecord(source, file) {
   const records = readLocalRecords();
   const nextId = Math.max(0, ...records.map((record) => record.id || 0)) + 1;
+  const rawText = await file.text().catch(() => '');
+  const extractedText = file.type === 'application/pdf' ? extractPdfText(rawText) : rawText.slice(0, 4000);
   const record = {
     id: nextId,
     data_source: { source_type: source },
@@ -66,6 +76,7 @@ function createLocalRecord(source, file) {
       file_name: file.name,
       file_type: file.type || 'unknown',
       file_size_bytes: file.size,
+      extracted_text: extractedText || 'Text extraction needs the hosted backend API. File metadata was captured locally.',
       note: 'Stored locally because the hosted backend API is not reachable.',
     },
     raw_record: {
@@ -116,10 +127,18 @@ async function request(path, options = {}) {
 }
 
 export function fetchDashboard() {
+  const localRecords = readLocalRecords();
+  if (localRecords.length > 0) {
+    return Promise.resolve(localDashboard());
+  }
   return request('/dashboard').catch(() => localDashboard());
 }
 
 export function fetchRecords(filters) {
+  const localRecords = readLocalRecords();
+  if (localRecords.length > 0) {
+    return Promise.resolve(applyFilters(localRecords, filters));
+  }
   const params = new URLSearchParams();
   Object.entries(filters || {}).forEach(([key, value]) => {
     if (value) params.set(key, value);
@@ -169,8 +188,8 @@ export function reviewRecord(id, action, comment) {
 export function uploadFile(source, file) {
   const body = new FormData();
   body.append('file', file);
-  return request(`/upload/${source}`, { method: 'POST', body }).catch(() => {
-    const record = createLocalRecord(source, file);
+  return request(`/upload/${source}`, { method: 'POST', body }).catch(async () => {
+    const record = await createLocalRecord(source, file);
     return {
       batch_id: `local-${Date.now()}`,
       created_count: 1,
