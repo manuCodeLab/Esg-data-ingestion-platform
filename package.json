@@ -8,5 +8,8 @@
   ],
   "scripts": {
     "build": "npm --workspace frontend run build"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "4.60.4"
   }
 }
