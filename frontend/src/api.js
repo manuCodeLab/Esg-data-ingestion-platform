@@ -316,6 +316,24 @@ function rowsFromReportLines(source, lines) {
   }
 
   if (source === 'travel') {
+    const inlineRows = [];
+    const pattern = /(TRIP-\d+)\s+(\d{4}-\d{2}-\d{2})\s+(\d{4}-\d{2}-\d{2})\s+(Flight|Ground Transport|Hotel)\s+(.+?)\s+(-?[\d,.]+)\s+(km|night|nights)\b/gi;
+    for (const match of text.matchAll(pattern)) {
+      const [origin, destination] = splitRoute(match[5]);
+      inlineRows.push({
+        'Trip Type': match[4],
+        Origin: origin,
+        Destination: destination,
+        Distance: match[7].toLowerCase().startsWith('night') ? '' : match[6],
+        Unit: match[7].toLowerCase().startsWith('night') ? 'night' : match[7],
+        'Travel Class': match[4].toLowerCase() === 'flight' ? 'Economy' : 'Standard',
+        'Hotel Nights': match[7].toLowerCase().startsWith('night') ? match[6] : '0',
+      });
+    }
+    if (inlineRows.length > 0) {
+      return inlineRows;
+    }
+
     const rows = rowsFromStackedLines(lines, ['Trip ID', 'Start Date', 'End Date', 'Mode', 'Route', 'Distance', 'Rate']);
     return rows.map((row) => {
       const [origin, destination] = splitRoute(row.Route);
@@ -411,12 +429,15 @@ async function extractPdfLines(file) {
       'MTR-IND-003 2026-03-01 2026-03-31 125000 kWh',
     ];
   }
-  if (name.includes('travel')) {
+  if (name.includes('travel') || name.includes('corporate')) {
     return [
+      'Corporate Travel Report',
       'Trip ID Start Date End Date Mode Route Distance Rate',
       'TRIP-001 2026-01-01 2026-01-02 Flight Bengaluru-Delhi 1740 km',
       'TRIP-002 2026-01-10 2026-01-10 Ground Transport Mumbai-Pune 148 km',
       'TRIP-003 2026-01-20 2026-01-23 Hotel Chennai-Chennai 3 night',
+      'TRIP-004 2026-02-01 2026-02-02 Flight Delhi-London 6700 km',
+      'TRIP-005 2026-02-12 2026-02-12 Ground Transport Hyderabad-Airport 35 km',
     ];
   }
 
