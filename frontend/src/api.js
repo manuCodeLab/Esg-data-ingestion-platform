@@ -1,20 +1,33 @@
-const API_BASE_URL = '/api';
+const API_BASE_URLS = [
+  import.meta.env.VITE_API_BASE_URL,
+  '/api',
+  'https://esg-data-ingestion-platform.onrender.com/api',
+  'https://esg-ingestion-backend.onrender.com/api',
+].filter(Boolean);
 const TENANT = import.meta.env.VITE_TENANT || 'demo';
 
 async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      'X-Tenant': TENANT,
-      ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
-      ...(options.headers || {}),
-    },
-  });
-  if (!response.ok) {
-    const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.detail || `Request failed: ${response.status}`);
+  let lastError;
+  for (const baseUrl of API_BASE_URLS) {
+    try {
+      const response = await fetch(`${baseUrl}${path}`, {
+        ...options,
+        headers: {
+          'X-Tenant': TENANT,
+          ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+          ...(options.headers || {}),
+        },
+      });
+      if (response.ok) {
+        return response.json();
+      }
+      const payload = await response.json().catch(() => ({}));
+      lastError = new Error(payload.detail || `Request failed: ${response.status}`);
+    } catch (error) {
+      lastError = error;
+    }
   }
-  return response.json();
+  throw lastError || new Error('Request failed');
 }
 
 export function fetchDashboard() {
