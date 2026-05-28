@@ -1,11 +1,5 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "framework": "vite",
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://esg-data-ingestion-platform.onrender.com/api/:path*"
-    }
-  ]
+  "framework": "vite"
 }
