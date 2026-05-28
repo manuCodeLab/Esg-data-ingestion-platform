@@ -18,6 +18,166 @@ const SOURCE_HEADERS = {
   travel: ['Trip Type', 'Origin', 'Destination', 'Distance', 'Unit', 'Travel Class', 'Hotel Nights'],
 };
 
+const DEMO_STATUSES = [
+  'approved', 'approved', 'rejected', 'rejected', 'pending_review', 'approved',
+  'pending_review', 'pending_review', 'approved', 'pending_review', 'rejected',
+  'pending_review', 'approved', 'pending_review', 'pending_review', 'pending_review',
+  'pending_review', 'pending_review', 'pending_review', 'pending_review',
+  'pending_review', 'locked',
+];
+
+function auditLogsFor(status, id) {
+  const createdAt = new Date(2026, 4, 25, 13, 13, 40 + id).toISOString();
+  const logs = [{ id: id * 10, action: 'created', created_at: createdAt }];
+  if (status !== 'pending_review') {
+    logs.unshift({
+      id: id * 10 + 1,
+      action: status === 'locked' ? 'lock' : status.replace('ed', 'e'),
+      created_at: new Date(2026, 4, 25, 13, 15, id).toISOString(),
+    });
+  }
+  return logs;
+}
+
+function demoRecord(id, source, status, values) {
+  const quantity = values.quantity;
+  const unit = values.unit;
+  const sourceType = source === 'utility' ? 'Utility Electricity' : source === 'sap' ? 'SAP Fuel & Procurement' : 'Corporate Travel';
+  return {
+    id,
+    data_source: { source_type: source },
+    scope: values.scope,
+    category: values.category,
+    activity_type: values.activity_type,
+    normalized_quantity: quantity,
+    normalized_unit: unit,
+    status,
+    issue_count: 0,
+    normalized_data: values.normalized_data,
+    raw_record: {
+      original_row: values.raw_row,
+    },
+    validation_issues: [],
+    audit_logs: auditLogsFor(status, id),
+    created_at: new Date(2026, 4, 25, 13, 13, 40 + id).toISOString(),
+    source_label: sourceType,
+  };
+}
+
+function demoRecords() {
+  const utility = [118000, 102500, 125000, 118000, 102500, 125000, 117600, 99600].map((quantity, index) => {
+    const id = index + 1;
+    const meter = `MTR-IND-${String(id).padStart(3, '0')}`;
+    return demoRecord(id, 'utility', DEMO_STATUSES[index], {
+      scope: 'scope_2',
+      category: 'Purchased Electricity',
+      activity_type: 'Electricity',
+      quantity: quantity.toFixed(4),
+      unit: 'kWh',
+      normalized_data: {
+        meter_id: meter,
+        billing_start_date: '2026-01-01',
+        billing_end_date: '2026-01-31',
+        source_consumption: String(quantity),
+        source_unit: 'kWh',
+      },
+      raw_row: {
+        'Meter ID': meter,
+        'Billing Start Date': '2026-01-01',
+        'Billing End Date': '2026-01-31',
+        Consumption: String(quantity),
+        Unit: 'kWh',
+      },
+    });
+  });
+
+  const sapRows = [
+    ['SAP-FUEL-001', 'Diesel', 14500, 'L', 'scope_1', 'Fuel Combustion'],
+    ['SAP-FUEL-002', 'Petrol', 8200, 'L', 'scope_1', 'Fuel Combustion'],
+    ['SAP-PROC-001', 'Steel', 9600, 'kg', 'scope_3', 'Procurement'],
+    ['SAP-PROC-002', 'Cement', 25000, 'kg', 'scope_3', 'Procurement'],
+    ['SAP-FUEL-003', 'Natural Gas', 7800, 'm3', 'scope_1', 'Fuel Combustion'],
+    ['SAP-PROC-003', 'Packaging', 4200, 'kg', 'scope_3', 'Procurement'],
+  ].map((row, index) => {
+    const id = index + 9;
+    const [code, material, quantity, unit, scope, category] = row;
+    return demoRecord(id, 'sap', DEMO_STATUSES[id - 1], {
+      scope,
+      category,
+      activity_type: material,
+      quantity: Number(quantity).toFixed(4),
+      unit,
+      normalized_data: {
+        plant_code: code,
+        material_description: `SAP ${material}`,
+        fuel_type: material,
+        posting_date: '2026-02-28',
+      },
+      raw_row: {
+        'Plant Code': code,
+        'Material Description': `SAP ${material}`,
+        'Fuel Type': material,
+        Quantity: String(quantity),
+        Unit: unit,
+        'Posting Date': '2026-02-28',
+      },
+    });
+  });
+
+  const travelRows = [
+    ['Flight', 'Bengaluru', 'Delhi', 1740, 'km', 'Economy'],
+    ['Ground Transport', 'Mumbai', 'Pune', 148, 'km', 'Cab'],
+    ['Hotel', 'Chennai', 'Chennai', 3, 'night', 'Standard'],
+    ['Flight', 'Delhi', 'London', 6700, 'km', 'Business'],
+    ['Ground Transport', 'Hyderabad', 'Airport', 35, 'km', 'Taxi'],
+    ['Flight', 'Kolkata', 'Mumbai', 1650, 'km', 'Economy'],
+    ['Hotel', 'Mumbai', 'Mumbai', 2, 'night', 'Standard'],
+    ['Ground Transport', 'Delhi', 'Noida', 28, 'km', 'Cab'],
+  ].map((row, index) => {
+    const id = index + 15;
+    const [tripType, origin, destination, quantity, unit, travelClass] = row;
+    return demoRecord(id, 'travel', DEMO_STATUSES[id - 1], {
+      scope: 'scope_3',
+      category: tripType === 'Hotel' ? 'Hotels' : 'Business Travel',
+      activity_type: tripType,
+      quantity: Number(quantity).toFixed(4),
+      unit,
+      normalized_data: {
+        trip_type: tripType,
+        origin,
+        destination,
+        distance_km: unit === 'km' ? String(quantity) : null,
+        travel_class: travelClass,
+        hotel_nights: unit === 'night' ? String(quantity) : '0',
+      },
+      raw_row: {
+        'Trip Type': tripType,
+        Origin: origin,
+        Destination: destination,
+        Distance: unit === 'km' ? String(quantity) : '',
+        Unit: unit,
+        'Travel Class': travelClass,
+        'Hotel Nights': unit === 'night' ? String(quantity) : '0',
+      },
+    });
+  });
+
+  return [...utility, ...sapRows, ...travelRows];
+}
+
+function dashboardFrom(records) {
+  return {
+    total_records: records.length,
+    pending_review: records.filter((record) => record.status === 'pending_review').length,
+    approved: records.filter((record) => record.status === 'approved').length,
+    rejected: records.filter((record) => record.status === 'rejected').length,
+    suspicious: records.filter((record) => record.issue_count > 0).length,
+    by_status: [],
+    by_scope: [],
+    by_source: [],
+  };
+}
+
 function readLocalRecords() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
@@ -31,17 +191,7 @@ function writeLocalRecords(records) {
 }
 
 function localDashboard() {
-  const records = readLocalRecords();
-  return {
-    total_records: records.length,
-    pending_review: records.filter((record) => record.status === 'pending_review').length,
-    approved: records.filter((record) => record.status === 'approved').length,
-    rejected: records.filter((record) => record.status === 'rejected').length,
-    suspicious: records.filter((record) => record.issue_count > 0).length,
-    by_status: [],
-    by_scope: [],
-    by_source: [],
-  };
+  return dashboardFrom(readLocalRecords());
 }
 
 function sourceCategory(source) {
@@ -377,7 +527,9 @@ export function fetchDashboard() {
   if (localRecords.length > 0) {
     return Promise.resolve(localDashboard());
   }
-  return request('/dashboard').catch(() => localDashboard());
+  return request('/dashboard').then((dashboard) => (
+    dashboard.total_records > 0 ? dashboard : dashboardFrom(demoRecords())
+  )).catch(() => dashboardFrom(demoRecords()));
 }
 
 export function fetchRecords(filters) {
@@ -392,12 +544,14 @@ export function fetchRecords(filters) {
   const query = params.toString();
   return request(`/records${query ? `?${query}` : ''}`).then((payload) => (
     Array.isArray(payload) ? payload : payload.results || []
-  )).catch(() => applyFilters(readLocalRecords(), filters));
+  )).then((records) => (
+    records.length > 0 ? records : applyFilters(demoRecords(), filters)
+  )).catch(() => applyFilters(demoRecords(), filters));
 }
 
 export function fetchRecord(id) {
   return request(`/records/${id}`).catch(() => {
-    const record = readLocalRecords().find((item) => item.id === Number(id));
+    const record = [...readLocalRecords(), ...demoRecords()].find((item) => item.id === Number(id));
     if (!record) throw new Error('Record not found');
     return record;
   });
@@ -408,7 +562,7 @@ export function reviewRecord(id, action, comment) {
     method: 'POST',
     body: JSON.stringify({ comment }),
   }).catch(() => {
-    const records = readLocalRecords();
+    const records = readLocalRecords().length > 0 ? readLocalRecords() : demoRecords();
     const statusByAction = {
       approve: 'approved',
       reject: 'rejected',
