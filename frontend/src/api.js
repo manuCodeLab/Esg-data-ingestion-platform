@@ -1,7 +1,4 @@
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/build/pdf.mjs';
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url';
-
-GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+import { getDocument } from 'pdfjs-dist/build/pdf.mjs';
 
 const API_BASE_URLS = [
   import.meta.env.VITE_API_BASE_URL,
@@ -398,7 +395,7 @@ function rowsFromTextLines(source, lines) {
 
 async function extractPdfLines(file) {
   const data = await file.arrayBuffer();
-  const pdf = await getDocument({ data }).promise;
+  const pdf = await getDocument({ data, disableWorker: true }).promise;
   const lines = [];
 
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
