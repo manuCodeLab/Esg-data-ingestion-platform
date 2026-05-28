@@ -31,12 +31,18 @@ export default async function handler(request, response) {
   const target = `${BACKEND_API_URL}/${path}${queryString ? `?${queryString}` : ''}`;
 
   try {
+    const headers = {
+      'X-Tenant': request.headers['x-tenant'] || 'demo',
+    };
+    if (request.headers['content-type']) {
+      headers['Content-Type'] = request.headers['content-type'];
+    }
+
     const backendResponse = await fetch(target, {
       method: request.method,
-      headers: {
-        'X-Tenant': request.headers['x-tenant'] || 'demo',
-        'Content-Type': request.headers['content-type'] || 'application/json',
-      },
+      headers,
+      body: ['GET', 'HEAD'].includes(request.method) ? undefined : request,
+      duplex: 'half',
     });
 
     if (backendResponse.ok) {
