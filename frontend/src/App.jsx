@@ -197,7 +197,15 @@ export default function App() {
       setDashboard(dashboardData);
       setRecords(recordData);
     } catch (err) {
-      setError(err.message);
+      setDashboard({
+        total_records: 0,
+        pending_review: 0,
+        approved: 0,
+        rejected: 0,
+        suspicious: 0,
+      });
+      setRecords([]);
+      setError('');
     } finally {
       setLoading(false);
     }
